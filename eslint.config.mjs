@@ -5,7 +5,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
 
 export default tseslint.config(
-  { ignores: ["**/dist/", "**/node_modules/", "**/*.config.{js,ts}"] },
+  { ignores: ["**/dist/", "**/node_modules/", "**/*.config.{js,ts,mjs,cjs}", "eslint.config.mjs"] },
 
   // ── Base: all TypeScript files ──
   {
