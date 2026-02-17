@@ -181,7 +181,7 @@ PostgreSQL automatically creates a B-tree index for every UNIQUE constraint. The
 
 | Omitted index | Covered by UNIQUE constraint |
 |---|---|
-| `(identity_commitment)` on `semaphore_members` | `uq_semaphore_members_commitment` |
+| `(identity_commitment)` on `semaphore_members` | `uq_semaphore_members_group_commitment` |
 | `(group_id, leaf_index)` on `semaphore_members` | `uq_semaphore_members_group_leaf` |
 | `(group_id, level, index_at_level)` on `merkle_tree_nodes` | `uq_merkle_tree_node_position` |
 | `(group_id, date)` on `analytics_daily_snapshots` | `uq_analytics_group_date` |

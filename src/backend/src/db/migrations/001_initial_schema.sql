@@ -576,7 +576,7 @@ CREATE TABLE analytics_daily_snapshots (
   total_posts              INTEGER       NOT NULL DEFAULT 0 CHECK (total_posts           >= 0),
   total_comments           INTEGER       NOT NULL DEFAULT 0 CHECK (total_comments         >= 0),
   total_votes              INTEGER       NOT NULL DEFAULT 0 CHECK (total_votes            >= 0),
-  avg_toxicity_score       NUMERIC(4,3)
+  avg_toxicity_score       NUMERIC(3,2)
                              CHECK (avg_toxicity_score IS NULL OR avg_toxicity_score BETWEEN 0 AND 1),
   flagged_content_count    INTEGER       NOT NULL DEFAULT 0 CHECK (flagged_content_count  >= 0),
   active_members_estimate  INTEGER
@@ -620,7 +620,8 @@ CREATE TABLE onboarding.credential_issuance_requests (
                           REFERENCES public.semaphore_groups(group_id) ON DELETE CASCADE,
   status                TEXT        NOT NULL DEFAULT 'pending'
                           CHECK (status IN ('pending','approved','rejected','issued')),
-  identity_commitment   BYTEA,
+  identity_commitment   BYTEA
+                          CHECK (identity_commitment IS NULL OR octet_length(identity_commitment) = 32),
   approved_by_admin_id  UUID
                           REFERENCES public.admin_users(id) ON DELETE SET NULL,
   rejection_reason      TEXT,
@@ -689,6 +690,10 @@ BEGIN
   RETURN deleted_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Restrict EXECUTE on this SECURITY DEFINER function to avoid PUBLIC running
+-- privileged deletes on onboarding.credential_issuance_requests.
+REVOKE EXECUTE ON FUNCTION onboarding.purge_expired_credential_requests() FROM PUBLIC;
 
 COMMENT ON TABLE  onboarding.credential_issuance_requests IS
   'ISOLATED in the onboarding schema. The ONLY place where real identities (email) '
