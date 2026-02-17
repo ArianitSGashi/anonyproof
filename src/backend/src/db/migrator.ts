@@ -80,7 +80,7 @@ export async function runMigrations(
     if (result.status === "Success") {
       console.log(`  ✔ Applied migration: ${result.migrationName}`);
     } else if (result.status === "NotExecuted") {
-      console.log(`  ⏭ Skipped (already applied): ${result.migrationName}`);
+      console.log(`  ⏭ Not executed (possibly blocked by earlier failure): ${result.migrationName}`);
     } else {
       console.error(`  ✖ Failed migration: ${result.migrationName}`);
     }

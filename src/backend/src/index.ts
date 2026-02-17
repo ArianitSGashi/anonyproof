@@ -45,6 +45,9 @@ async function bootstrap(): Promise<void> {
     console.log("Database is up to date — no pending migrations.");
   }
 
+  // Clean up the DB pool used for migrations
+  await db.destroy();
+
   // 3. Start Express server
   app.listen(port, () => {
     console.log(`API listening on http://localhost:${port}`);
