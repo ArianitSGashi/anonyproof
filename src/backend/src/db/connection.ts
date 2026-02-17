@@ -34,9 +34,16 @@ export function getDatabaseConfig(): DatabaseConfig {
     );
   }
 
+  const parsedPort = Number(port);
+  if (!Number.isFinite(parsedPort) || parsedPort <= 0 || !Number.isInteger(parsedPort)) {
+    throw new Error(
+      `DATABASE_PORT must be a valid positive integer, got: "${port}"`
+    );
+  }
+
   return {
     host: host!,
-    port: Number(port),
+    port: parsedPort,
     database: database!,
     user: user!,
     password: password!,
