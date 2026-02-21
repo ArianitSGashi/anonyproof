@@ -10,9 +10,15 @@
     "dev": "pnpm -r --parallel --if-present dev",
     "build": "pnpm -r --if-present build",
     "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
     "lint": "eslint \"src/**/*.{js,jsx,ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{js,jsx,ts,tsx}\" --fix",
     "clean": "pnpm -r --if-present clean"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "bcrypt"
+    ]
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
