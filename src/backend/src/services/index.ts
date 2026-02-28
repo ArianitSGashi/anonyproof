@@ -2,10 +2,6 @@
  * Services barrel export.
  *
  * All service classes will be exported from here as they are built:
- *   - PostService        (Phase 3)
- *   - CommentService     (Phase 3)
- *   - VoteService        (Phase 3)
- *   - ModerationService  (Phase 4)
  *   - AdminService       (Phase 5)
  */
 
@@ -29,3 +25,22 @@ export type {
 } from "./semaphore.service.js";
 
 export { GroupService } from "./group.service.js";
+
+export { PostService } from "./post.service.js";
+export type { CreatePostInput, PostListResult } from "./post.service.js";
+
+export { CommentService } from "./comment.service.js";
+export type { CreateCommentInput } from "./comment.service.js";
+
+export { VoteService } from "./vote.service.js";
+export type { CastVoteInput } from "./vote.service.js";
+
+export { ModerationService } from "./moderation.service.js";
+export type {
+  ModerationResult,
+  QueueFilters,
+  QueueItemRow,
+} from "./moderation.service.js";
+
+export { createAiClient, MockAiClient, PerspectiveApiClient } from "./ai-client.js";
+export type { AiClient, AiAnalysisResult } from "./ai-client.js";
