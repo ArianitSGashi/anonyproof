@@ -30,7 +30,8 @@ class SqlFileMigrationProvider implements MigrationProvider {
       const filePath = join(this.migrationsDir, file);
 
       migrations[name] = {
-        async up(db: Kysely<Record<string, unknown>>): Promise<void> {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        async up(db: Kysely<any>): Promise<void> {
           const sqlContent = await readFile(filePath, "utf-8");
           await sql.raw(sqlContent).execute(db);
         },
@@ -61,7 +62,8 @@ export interface MigrationResult {
  * @throws If any migration fails (all changes in that migration are rolled back)
  */
 export async function runMigrations(
-  db: Kysely<Record<string, unknown>>,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: Kysely<any>,
   migrationsDir: string
 ): Promise<MigrationResult> {
   const migrator = new Migrator({
