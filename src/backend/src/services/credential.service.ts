@@ -25,7 +25,7 @@ import {
   ConflictError,
   NotFoundError,
 } from "../middleware/error-handler.js";
-import { BlindSignatureService } from "./blind-signature.service.js";
+import type { BlindSignatureService } from "./blind-signature.service.js";
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
@@ -107,9 +107,9 @@ export class CredentialService {
 
     // Check if group exists
     const group = await db
-      .selectFrom("semaphore_groups" as never)
-      .select("id" as never)
-      .where("group_id" as never, "=", groupIdBuf as never)
+      .selectFrom("semaphore_groups")
+      .select("id")
+      .where("group_id", "=", groupIdBuf)
       .executeTakeFirst();
 
     if (!group) {
@@ -118,11 +118,12 @@ export class CredentialService {
 
     // Check for duplicate pending request (same email + group)
     const existing = await db
-      .selectFrom("onboarding.credential_issuance_requests" as never)
-      .select("id" as never)
-      .where("university_email" as never, "=", universityEmail as never)
-      .where("group_id" as never, "=", groupIdBuf as never)
-      .where("status" as never, "in", ["pending_review", "approved"] as never)
+      .withSchema("onboarding")
+      .selectFrom("credential_issuance_requests")
+      .select("id")
+      .where("email", "=", universityEmail)
+      .where("group_id", "=", groupIdBuf)
+      .where("status", "in", ["pending", "approved"])
       .executeTakeFirst();
 
     if (existing) {
@@ -134,17 +135,17 @@ export class CredentialService {
     // Store the blind request
     // NOTE: identity_commitment column stores the BLINDED commitment, not the real one
     const result = await db
-      .insertInto("onboarding.credential_issuance_requests" as never)
+      .withSchema("onboarding")
+      .insertInto("credential_issuance_requests")
       .values({
-        university_email: universityEmail,
+        email: universityEmail,
         group_id: groupIdBuf,
         identity_commitment: blindedBuf, // BLINDED, not real
-        status: "pending_review",
-      } as never)
-      .returning("id" as never)
+      })
+      .returning("request_id")
       .executeTakeFirst();
 
-    return { requestId: (result as Record<string, unknown>)["id"] as string };
+    return { requestId: result!.request_id };
   }
 
   // ─── Admin: Approve a Single Request ───────────────────────────────
@@ -162,47 +163,48 @@ export class CredentialService {
     const db = getDb();
 
     const request = await db
-      .selectFrom("onboarding.credential_issuance_requests" as never)
+      .withSchema("onboarding")
+      .selectFrom("credential_issuance_requests")
       .selectAll()
-      .where("id" as never, "=", requestId as never)
+      .where("id", "=", requestId)
       .executeTakeFirst();
 
     if (!request) {
       throw new NotFoundError("Credential request not found");
     }
 
-    const row = request as Record<string, unknown>;
-
-    if (row["status"] !== "pending_review") {
-      throw new BadRequestError(`Request is already ${row["status"] as string}`);
+    if (request.status !== "pending") {
+      throw new BadRequestError(`Request is already ${request.status}`);
     }
 
     // Sign the blinded commitment
-    const blindedCommitment = row["identity_commitment"] as Buffer;
-    const blindSignature = this.blindSigService.signBlinded(blindedCommitment);
+    if (!request.identity_commitment) {
+      throw new BadRequestError("Request has no blinded commitment");
+    }
+    const blindSignature = this.blindSigService.signBlinded(request.identity_commitment);
 
     // Update request status
     await db
-      .updateTable("onboarding.credential_issuance_requests" as never)
+      .withSchema("onboarding")
+      .updateTable("credential_issuance_requests")
       .set({
         status: "approved",
-        reviewed_by: adminId,
-        reviewed_at: new Date(),
+        approved_by_admin_id: adminId,
         blind_signature: blindSignature,
-      } as never)
-      .where("id" as never, "=", requestId as never)
+      })
+      .where("id", "=", requestId)
       .execute();
 
     // Log admin action
     await db
-      .insertInto("admin_actions" as never)
+      .insertInto("admin_actions")
       .values({
         admin_id: adminId,
         action_type: "credential_approved",
         target_type: "credential_request",
         target_id: requestId,
-        details: JSON.stringify({ note: "Blind signature issued" }),
-      } as never)
+        details: { note: "Blind signature issued" },
+      })
       .execute();
 
     return {
@@ -244,35 +246,40 @@ export class CredentialService {
     await db.transaction().execute(async (trx) => {
       for (const requestId of requestIds) {
         const request = await trx
-          .selectFrom("onboarding.credential_issuance_requests" as never)
+          .withSchema("onboarding")
+          .selectFrom("credential_issuance_requests")
           .selectAll()
-          .where("id" as never, "=", requestId as never)
+          .where("id", "=", requestId)
           .executeTakeFirst();
 
         if (!request) {
           throw new NotFoundError(`Credential request ${requestId} not found`);
         }
 
-        const row = request as Record<string, unknown>;
-
-        if (row["status"] !== "pending_review") {
+        if (request.status !== "pending") {
           throw new BadRequestError(
-            `Request ${requestId} is already ${row["status"] as string}`
+            `Request ${requestId} is already ${request.status}`
           );
         }
 
-        const blindedCommitment = row["identity_commitment"] as Buffer;
-        const blindSignature = this.blindSigService.signBlinded(blindedCommitment);
+        if (!request.identity_commitment) {
+          throw new BadRequestError(
+            `Request ${requestId} has no blinded commitment`
+          );
+        }
+        const blindSignature = this.blindSigService.signBlinded(
+          request.identity_commitment
+        );
 
         await trx
-          .updateTable("onboarding.credential_issuance_requests" as never)
+          .withSchema("onboarding")
+          .updateTable("credential_issuance_requests")
           .set({
             status: "approved",
-            reviewed_by: adminId,
-            reviewed_at: new Date(),
+            approved_by_admin_id: adminId,
             blind_signature: blindSignature,
-          } as never)
-          .where("id" as never, "=", requestId as never)
+          })
+          .where("id", "=", requestId)
           .execute();
 
         results.push({
@@ -283,17 +290,17 @@ export class CredentialService {
 
       // Log single batch action (not per-request — that leaks ordering info)
       await trx
-        .insertInto("admin_actions" as never)
+        .insertInto("admin_actions")
         .values({
           admin_id: adminId,
           action_type: "credential_batch_approved",
           target_type: "credential_request",
           target_id: requestIds[0],
-          details: JSON.stringify({
+          details: {
             batch_size: requestIds.length,
             note: "Blind signatures issued in batch for timing anonymity",
-          }),
-        } as never)
+          },
+        })
         .execute();
     });
 
@@ -359,9 +366,9 @@ export class CredentialService {
 
     // Check if group exists
     const group = await db
-      .selectFrom("semaphore_groups" as never)
-      .select(["id", "group_id"] as never)
-      .where("group_id" as never, "=", groupIdBuf as never)
+      .selectFrom("semaphore_groups")
+      .select("id")
+      .where("group_id", "=", groupIdBuf)
       .executeTakeFirst();
 
     if (!group) {
@@ -370,10 +377,10 @@ export class CredentialService {
 
     // Check if commitment already registered in this group
     const existing = await db
-      .selectFrom("semaphore_members" as never)
-      .select("id" as never)
-      .where("group_id" as never, "=", groupIdBuf as never)
-      .where("identity_commitment" as never, "=", commitmentBuf as never)
+      .selectFrom("semaphore_members")
+      .select("id")
+      .where("group_id", "=", groupIdBuf)
+      .where("identity_commitment", "=", commitmentBuf)
       .executeTakeFirst();
 
     if (existing) {
@@ -384,24 +391,22 @@ export class CredentialService {
 
     // Get the next leaf index for this group
     const countResult = await db
-      .selectFrom("semaphore_members" as never)
-      .select(db.fn.countAll().as("count") as never)
-      .where("group_id" as never, "=", groupIdBuf as never)
+      .selectFrom("semaphore_members")
+      .select(db.fn.countAll<number>().as("count"))
+      .where("group_id", "=", groupIdBuf)
       .executeTakeFirst();
 
-    const leafIndex = Number(
-      (countResult as Record<string, unknown> | undefined)?.["count"] ?? 0
-    );
+    const leafIndex = Number(countResult?.count ?? 0);
 
     // Add to semaphore_members
     // NOTE: MerkleService will handle tree node updates when it's built (Phase 2)
     await db
-      .insertInto("semaphore_members" as never)
+      .insertInto("semaphore_members")
       .values({
         group_id: groupIdBuf,
         identity_commitment: commitmentBuf,
         leaf_index: leafIndex,
-      } as never)
+      })
       .execute();
 
     return { leafIndex };
@@ -420,9 +425,10 @@ export class CredentialService {
     const db = getDb();
 
     const request = await db
-      .selectFrom("onboarding.credential_issuance_requests" as never)
-      .select("id" as never)
-      .where("id" as never, "=", requestId as never)
+      .withSchema("onboarding")
+      .selectFrom("credential_issuance_requests")
+      .select("id")
+      .where("id", "=", requestId)
       .executeTakeFirst();
 
     if (!request) {
@@ -430,25 +436,25 @@ export class CredentialService {
     }
 
     await db
-      .updateTable("onboarding.credential_issuance_requests" as never)
+      .withSchema("onboarding")
+      .updateTable("credential_issuance_requests")
       .set({
         status: "rejected",
-        reviewed_by: adminId,
-        reviewed_at: new Date(),
+        approved_by_admin_id: adminId,
         rejection_reason: reason,
-      } as never)
-      .where("id" as never, "=", requestId as never)
+      })
+      .where("id", "=", requestId)
       .execute();
 
     await db
-      .insertInto("admin_actions" as never)
+      .insertInto("admin_actions")
       .values({
         admin_id: adminId,
         action_type: "credential_rejected",
         target_type: "credential_request",
         target_id: requestId,
-        details: JSON.stringify({ reason }),
-      } as never)
+        details: { reason },
+      })
       .execute();
   }
 
@@ -470,28 +476,26 @@ export class CredentialService {
     const db = getDb();
 
     const requests = await db
-      .selectFrom("onboarding.credential_issuance_requests" as never)
+      .withSchema("onboarding")
+      .selectFrom("credential_issuance_requests")
       .select([
         "id",
-        "university_email",
+        "email",
         "group_id",
         "status",
         "created_at",
-      ] as never)
-      .where("status" as never, "=", "pending_review" as never)
-      .orderBy("created_at" as never, "asc")
+      ])
+      .where("status", "=", "pending")
+      .orderBy("created_at", "asc")
       .execute();
 
-    return requests.map((r) => {
-      const row = r as Record<string, unknown>;
-      return {
-        id: row["id"] as string,
-        universityEmail: row["university_email"] as string,
-        groupId: (row["group_id"] as Buffer).toString("hex"),
-        status: row["status"] as string,
-        createdAt: row["created_at"] as Date,
-      };
-    });
+    return requests.map((r) => ({
+      id: r.id,
+      universityEmail: r.email,
+      groupId: r.group_id.toString("hex"),
+      status: r.status,
+      createdAt: r.created_at,
+    }));
   }
 }
 

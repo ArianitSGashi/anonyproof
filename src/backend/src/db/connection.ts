@@ -1,5 +1,6 @@
 import { Kysely, PostgresDialect } from "kysely";
 import pg from "pg";
+import type { Database } from "../types/database.js";
 
 export interface DatabaseConfig {
   host: string;
@@ -53,7 +54,7 @@ export function getDatabaseConfig(): DatabaseConfig {
 /**
  * Creates and returns a Kysely database instance connected to PostgreSQL.
  */
-export function createDatabase(config: DatabaseConfig): Kysely<Record<string, unknown>> {
+export function createDatabase(config: DatabaseConfig): Kysely<Database> {
   const dialect = new PostgresDialect({
     pool: new pg.Pool({
       host: config.host,
@@ -65,5 +66,5 @@ export function createDatabase(config: DatabaseConfig): Kysely<Record<string, un
     }),
   });
 
-  return new Kysely({ dialect });
+  return new Kysely<Database>({ dialect });
 }

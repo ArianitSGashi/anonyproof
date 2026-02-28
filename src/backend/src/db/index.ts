@@ -20,11 +20,7 @@
 
 import type { Kysely } from "kysely";
 import { createDatabase, type DatabaseConfig } from "./connection.js";
-
-// The Database type will be defined in types/database.ts (Phase 1).
-// For now, use Record<string, unknown> and update once types are ready.
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface Database extends Record<string, unknown> {}
+import type { Database } from "../types/database.js";
 
 let _db: Kysely<Database> | null = null;
 

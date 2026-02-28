@@ -79,3 +79,124 @@ export interface PendingCredentialRequest {
   createdAt: string; // ISO-8601
 }
 
+// ─── Pagination ──────────────────────────────────────────────────────────────
+
+/** Query parameters for paginated endpoints. */
+export interface PaginationParams {
+  page?: number; // 1-indexed, default 1
+  limit?: number; // items per page, default 20
+}
+
+/** Standard paginated response wrapper. */
+export interface PaginatedResponse<T> {
+  data: T[];
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+}
+
+// ─── Groups ──────────────────────────────────────────────────────────────────
+
+export interface GroupResponse {
+  id: string;
+  groupId: string; // hex
+  name: string;
+  description: string | null;
+  depth: number;
+  memberCount: number;
+  createdAt: string; // ISO-8601
+}
+
+export interface CreateGroupRequest {
+  name: string;
+  description?: string;
+  depth: number;
+}
+
+// ─── ZK Proofs ───────────────────────────────────────────────────────────────
+
+/** Serialised ZKP proof fields included in content creation requests. */
+export interface ZkProof {
+  nullifierHash: string; // hex — 32 bytes
+  externalNullifier: string; // scope string
+  proof: string; // serialised snark proof
+}
+
+// ─── Posts ────────────────────────────────────────────────────────────────────
+
+export interface CreatePostRequest {
+  groupId: string; // hex
+  content: string;
+  proof: ZkProof;
+}
+
+export interface PostResponse {
+  id: string;
+  groupId: string; // hex
+  content: string;
+  moderationStatus: string;
+  upvotes: number;
+  downvotes: number;
+  voteScore: number;
+  commentCount?: number;
+  createdAt: string; // ISO-8601
+}
+
+// ─── Comments ────────────────────────────────────────────────────────────────
+
+export interface CreateCommentRequest {
+  postId: string;
+  parentCommentId?: string;
+  content: string;
+  proof: ZkProof;
+}
+
+export interface CommentResponse {
+  id: string;
+  postId: string;
+  parentCommentId: string | null;
+  content: string;
+  moderationStatus: string;
+  upvotes: number;
+  downvotes: number;
+  voteScore: number;
+  createdAt: string; // ISO-8601
+}
+
+// ─── Votes ───────────────────────────────────────────────────────────────────
+
+export interface VoteRequest {
+  postId?: string;
+  commentId?: string;
+  voteType: "upvote" | "downvote";
+  proof: ZkProof;
+}
+
+export interface VoteResponse {
+  id: string;
+  voteType: "upvote" | "downvote";
+  createdAt: string; // ISO-8601
+}
+
+// ─── Moderation ──────────────────────────────────────────────────────────────
+
+export interface ModerationQueueItem {
+  id: string;
+  contentType: "post" | "comment";
+  contentId: string;
+  content: string;
+  toxicityScore: number;
+  flaggedCategories: unknown;
+  status: string;
+  createdAt: string; // ISO-8601
+}
+
+export interface ModerationDecision {
+  queueItemId: string;
+  decision: "approved" | "rejected" | "escalated";
+  notes?: string;
+}
+
