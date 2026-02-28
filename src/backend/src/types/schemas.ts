@@ -1,3 +1,5 @@
+/**
+ * Zod validation schemas for Phase 3 API endpoints.
  *
  * Each schema validates the incoming request body or query parameters.
  * Hex strings are validated for length and charset; UUIDs use Zod's .uuid().
