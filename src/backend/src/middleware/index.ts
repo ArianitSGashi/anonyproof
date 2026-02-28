@@ -9,3 +9,4 @@ export {
   ConflictError,
   TooManyRequestsError,
 } from "./error-handler.js";
+export { createRequireAdmin, requireRole } from "./auth.js";
