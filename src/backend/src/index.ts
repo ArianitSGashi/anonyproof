@@ -59,12 +59,21 @@ async function bootstrap(): Promise<void> {
   });
 
   // 4. Graceful shutdown — release DB connections on SIGTERM/SIGINT
+  let isShuttingDown = false;
+
   const shutdown = async () => {
+    if (isShuttingDown) return; // Guard against duplicate signals
+    isShuttingDown = true;
+
     console.log("\nShutting down gracefully...");
-    server.close();
+
+    // Wait for the HTTP server to fully close (finish in-flight requests)
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
+    });
+
     await destroyDatabase();
     console.log("Database connections released. Goodbye.");
-    process.exit(0);
   };
 
   process.on("SIGTERM", () => void shutdown());
