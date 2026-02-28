@@ -25,7 +25,7 @@ import {
   ConflictError,
   NotFoundError,
 } from "../middleware/error-handler.js";
-import { BlindSignatureService } from "./blind-signature.service.js";
+import type { BlindSignatureService } from "./blind-signature.service.js";
 
 // ─── DTOs ────────────────────────────────────────────────────────────────────
 
