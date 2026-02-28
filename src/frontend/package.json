@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@repo/shared": "workspace:*",
+    "@semaphore-protocol/core": "^4.14.2",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
