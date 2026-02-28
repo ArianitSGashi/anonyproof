@@ -6,6 +6,9 @@
 
 import type { Express } from "express";
 import { healthRouter } from "./health.js";
+import { postsRouter } from "./posts.js";
+import { commentsRouter } from "./comments.js";
+import { votesRouter } from "./votes.js";
 
 /**
  * Registers all application routes on the Express app.
@@ -13,9 +16,6 @@ import { healthRouter } from "./health.js";
  *
  * Route modules will be added here as they are built:
  *   - /api/groups      (Phase 2)
- *   - /api/posts       (Phase 3)
- *   - /api/comments    (Phase 3)
- *   - /api/votes       (Phase 3)
  *   - /api/credentials (Phase 5)
  *   - /api/admin/*     (Phase 5)
  */
@@ -23,11 +23,13 @@ export function registerRoutes(app: Express): void {
   // Public routes
   app.use(healthRouter);
 
-  // API routes will be added here:
+  // API routes
+  app.use("/api", postsRouter);
+  app.use("/api", commentsRouter);
+  app.use("/api", votesRouter);
+
+  // Future:
   // app.use("/api", groupsRouter);
-  // app.use("/api", postsRouter);
-  // app.use("/api", commentsRouter);
-  // app.use("/api", votesRouter);
   // app.use("/api", credentialsRouter);
   // app.use("/api/admin", adminRouter);
 }
