@@ -200,3 +200,46 @@ export interface ModerationDecision {
   notes?: string;
 }
 
+// ─── Admin ───────────────────────────────────────────────────────────────────
+
+export interface AdminLoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface AdminLoginResponse {
+  token: string;
+  admin: {
+    id: string;
+    username: string;
+    role: "moderator" | "admin" | "superadmin";
+  };
+}
+
+export interface CreateAdminRequest {
+  username: string;
+  email: string;
+  password: string;
+  role: "moderator" | "admin" | "superadmin";
+}
+
+export interface AdminResponse {
+  id: string;
+  username: string;
+  email: string;
+  role: "moderator" | "admin" | "superadmin";
+  isActive: boolean;
+  createdAt: string; // ISO-8601
+}
+
+export interface AuditLogEntry {
+  id: string;
+  adminId: string | null;
+  actionType: string;
+  targetType: string | null;
+  targetId: string | null;
+  details: unknown;
+  ipAddress: string | null;
+  createdAt: string; // ISO-8601
+}
+
