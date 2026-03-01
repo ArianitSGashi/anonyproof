@@ -1,8 +1,5 @@
 /**
  * Services barrel export.
- *
- * All service classes will be exported from here as they are built:
- *   - AdminService       (Phase 5)
  */
 
 export { BlindSignatureService } from "./blind-signature.service.js";
@@ -44,3 +41,13 @@ export type {
 
 export { createAiClient, MockAiClient, PerspectiveApiClient } from "./ai-client.js";
 export type { AiClient, AiAnalysisResult } from "./ai-client.js";
+
+export { AdminService } from "./admin.service.js";
+export type {
+  AdminTokenPayload,
+  LoginResult,
+  AuditFilters,
+} from "./admin.service.js";
+
+export { CredentialAdminService } from "./credential-admin.service.js";
+export type { CredentialRequestDTO } from "./credential-admin.service.js";
