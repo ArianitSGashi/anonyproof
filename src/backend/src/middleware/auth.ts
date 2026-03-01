@@ -24,11 +24,15 @@ import { UnauthorizedError, ForbiddenError } from "./error-handler.js";
 
 // ─── Extend Express Request ──────────────────────────────────────────────────
 
-declare module "express" {
-  interface Request {
-    admin?: AdminTokenPayload;
+/* eslint-disable @typescript-eslint/no-namespace -- Express augmentation requires namespace */
+declare global {
+  namespace Express {
+    interface Request {
+      admin?: AdminTokenPayload;
+    }
   }
 }
+/* eslint-enable @typescript-eslint/no-namespace */
 
 // ─── Middleware Factory ──────────────────────────────────────────────────────
 
